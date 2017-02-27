@@ -18,12 +18,15 @@ class DFTB(object):
                  lenUnit='Angstrom', verbose=False):
         self.__verbose = verbose
         # Any internal length is in Bohr
-        cartInBohr = np.array(cart)
-        cartInBohr[:, 1:] *= {'Bohr': 1.0, 'Angstrom': ANGSTROM2BOHR}[lenUnit]
-        self.atomList = [AtomEntry(cartRow) for cartRow in cartInBohr]
+        cartBohr = np.array(cart)
+        cartBohr[:, 1:] *= {'Bohr': 1.0, 'Angstrom': ANGSTROM2BOHR}[lenUnit]
+        self.atomList = [AtomEntry(cartRow) for cartRow in cartBohr]
         self.parDict = parDict
         argTup = self.atomList, parDict
-        self.repObj = Repulsion(*argTup) if rep == 'def' else rep(cartInBohr)
+        self.repObj = Repulsion(*argTup) if rep == 'def' else rep(cartBohr)
+        
+        #~ import pdb; pdb.set_trace()
+        
         self.repulsion = self.repObj.Energy()
         self.__shellBasis = _ShellBasis(self.atomList)
         self.__numVEShellNeu = _NumVEShellNeu(*argTup)
@@ -65,6 +68,7 @@ class DFTB(object):
         energy += dftb.repulsion
         grad = dftb.ElecEnergyXYZDeriv1()
         grad += dftb.RepulsionXYZDeriv1()
+        print cart
         return energy, densList, grad
     
     def SCF(self, guess='core'):
@@ -144,7 +148,7 @@ class DFTB(object):
     
     def SolveFock(self, fock):
         orFock = self.__toOrtho.T.dot(fock).dot(self.__toOrtho)
-        (orbEigVal, orOrb) = np.linalg.eigh(orFock)
+        orbEigVal, orOrb = np.linalg.eigh(orFock)
         argsort = np.argsort(orbEigVal)
         return (orbEigVal[argsort], self.__toOrtho.dot(orOrb[:, argsort]))
     
